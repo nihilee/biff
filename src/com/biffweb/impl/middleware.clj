@@ -13,6 +13,14 @@
             [ring.middleware.ssl :as ssl]
             [rum.core :as rum]))
 
+(defn wrap-content-length [handler]
+  (fn [req]
+    (let [resp (handler req)]
+      (if (and (string? (:body resp))
+               (not (contains? (:headers resp) "Content-Length")))
+        (assoc-in resp [:headers "Content-Length"] (str (count (:body resp))))
+        resp))))
+
 (defn wrap-debug [handler]
   (fn [ctx]
     (util/pprint [:request ctx])
@@ -167,9 +175,11 @@
       muuntaja/wrap-format
       (rd/wrap-defaults (-> rd/site-defaults
                             (assoc-in [:security :anti-forgery] false)
+                            (assoc-in [:security :xss-protection] false)
                             (assoc-in [:responses :absolute-redirects] true)
                             (assoc :session false)
-                            (assoc :static false)))))
+                            (assoc :static false)))
+      wrap-content-length))
 
 (defn wrap-api-defaults [handler]
   (-> handler

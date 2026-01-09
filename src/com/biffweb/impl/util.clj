@@ -5,7 +5,6 @@
             [clojure.pprint :as pp]
             [clojure.spec.alpha :as spec]
             [clojure.string :as str]
-            [clojure.repl.deps :as repl-deps]
             [clojure.tools.logging :as log]
             [clojure.tools.namespace.repl :as tn-repl]
             [clojure.walk :as walk]
@@ -34,18 +33,12 @@
     (f))
   (tn-repl/refresh :after after-refresh))
 
-(let [deps-last-modified (atom (.lastModified (io/file "deps.edn")))]
-  (defn add-libs [opts]
-    (let [last-modified (.lastModified (io/file "deps.edn"))]
-      (when (not= last-modified @deps-last-modified)
-        (reset! deps-last-modified last-modified)
-        (binding [*repl* true]
-          (repl-deps/sync-deps opts))))))
+
 
 (defn ppr-str [x]
   (with-out-str
-   (binding [*print-namespace-maps* false]
-     (pp/pprint x))))
+    (binding [*print-namespace-maps* false]
+      (pp/pprint x))))
 
 (defn pprint [object & [writer]]
   (binding [*print-namespace-maps* false]

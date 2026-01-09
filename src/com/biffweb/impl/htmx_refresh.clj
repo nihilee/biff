@@ -1,7 +1,6 @@
 (ns com.biffweb.impl.htmx-refresh
   (:require [com.biffweb.impl.rum :as brum]
             [clojure.string :as str]
-            [ring.websocket :as ws]
             [ring.util.response :as ru-response]
             [rum.core :as rum]))
 
@@ -10,16 +9,21 @@
               [:div#biff-refresh {:hx-swap-oob "innerHTML"}
                content])]
     (doseq [ws @clients]
-      (ws/send ws html))))
+      (when-let [send-fn (resolve 'ring.websocket/send)]
+        (send-fn ws html)))))
 
 (defn ws-handler [{:keys [biff.refresh/clients] :as ctx}]
-  {:status 101
-   :headers {"upgrade" "websocket"
-             "connection" "upgrade"}
-   ::ws/listener {:on-open (fn [ws]
-                             (swap! clients conj ws))
-                  :on-close (fn [ws status-code reason]
-                              (swap! clients disj ws))}})
+  (if-let [ws-ns (find-ns 'ring.websocket)]
+    {:status 101
+     :headers {"upgrade" "websocket"
+               "connection" "upgrade"}
+     (keyword (str (ns-name ws-ns) "/listener")) {:on-open (fn [ws]
+                                                             (swap! clients conj ws))
+                                                  :on-close (fn [ws status-code reason]
+                                                              (swap! clients disj ws))}
+     }
+    {:status 501
+     :body "WebSocket not supported"}))
 
 (def snippet
   (str (rum/render-static-markup

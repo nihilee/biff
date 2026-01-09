@@ -272,9 +272,12 @@
 (defn add-libs
   "Loads new dependencies in deps.edn via clojure.repl.deps/sync-deps.
 
-   Only calls sync-deps if deps.edn has been modified. `args` are passed to `sync-deps`."
+   Only calls sync-deps if deps.edn has been modified. `args` are passed to `sync-deps`.
+   Note: This function is only available when using Clojure CLI (deps.edn), not when using Leiningen."
   [& {:biff.add-libs/keys [aliases]}]
-  (util/add-libs {:aliases aliases}))
+  (when-let [util-add-libs (resolve 'com.biffweb.impl.util/add-libs)]
+    (util-add-libs {:aliases aliases}))
+  (println "Warning: add-libs is not available when using Leiningen. Use lein to manage dependencies instead."))
 
 (defn delete-old-files
   "Deletes files descended from the given directory that are older than a given threshold.
